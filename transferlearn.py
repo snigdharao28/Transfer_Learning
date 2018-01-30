@@ -142,7 +142,7 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs = 25):
         print()
 
     time_elapsed = time.time() - since
-    print('Training complete in {:.0f}m {.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
+    print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
     print('Best val Acc: {:4f}'.format(best_acc))
     
     #load best model weights
@@ -196,14 +196,30 @@ exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
 model_ft = train_model(model_ft, criterion, optimizer_ft, exp_lr_scheduler, num_epochs=25)
 
 
+visualize_model(model_ft)
 
 
+model_conv = torchvision.models.resnet18(pretrained=True)
+for param in model_conv.parameters():
+    param.requires_grad = False
+    
+num_ftrs = model_conv.fc.in_features
+model_conv.fc = nn.Linear(num_ftrs, 2)
 
+if use_gpu:
+    model_conv = model_conv.cuda()
+    
+criterion = nn.CrossEntropyLoss()
 
+# only parameters of final layer are being optimized as opposed to before
+optimizer_conv = optim.SGD(model_conv.fc.parameters(), lr=0.001, momentum=0.9)
 
+#Decay LR by a factor of 0.1 every 7 epochs
+exp_lr_scheduler = lr_scheduler.StepLR(optimizer_conv, step_size=7, gamma=0.1)
 
+model_conv = train_model(model_conv, criterion, optimizer_conv, exp_lr_scheduler, num_epochs=25)
 
+visualize_model(model_conv)
 
-
-
-
+plt.ioff()
+plt.show()
